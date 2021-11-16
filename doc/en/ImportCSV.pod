@@ -1,0 +1,2 @@
+This OPM package provides otrs.Console commands that read various CSV files for provisioing the OTRS database with users, groups, queues, etc.
+TDB

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<otrs_package version="1.0">
+    <Name>ImportCSV</Name>
+    <Version>0.0.1</Version>
+    <Framework>6.0.x</Framework>
+    <Vendor>terreActive AG</Vendor>
+    <URL>http://www.terreactive.ch/</URL>
+    <License>GNU AFFERO GENERAL PUBLIC LICENSE Version 3, November 2007</License>
+    <Description Lang="en">Import CSV files from the otrs.Console</Description>
+    <Description Lang="de">Importiren von CSV-Files mittels otrs.Console</Description>
+    <BuildDate>?</BuildDate>
+    <BuildHost>?</BuildHost>
+    <Filelist>
+        <File Permission="644" Location="doc/en/ImportCSV.pod"/>
+        <File Permission="644" Location="ImportCSV/Kernel/System/Console/Command/Admin/Role/ImportCSV.pm" />
+        <File Permission="644" Location="ImportCSV/Kernel/System/Console/Command/Admin/RoleUser/ImportCSV.pm" />
+    </Filelist>
+</otrs_package>
