@@ -133,22 +133,28 @@ sub _StoreData {
             ) {
                 $CountUnchanged++;
             } else {
-                $GroupObject->RoleUpdate(
+                $CountUpdate++;
+                unless ($Self->{DryRun}) {
+                    $GroupObject->RoleUpdate(
+                        ID      => $RoleID,
+                        Name    => $Name,
+                        Comment => $Comment,
+                        ValidID => $ValidID,
+                        UserID  => 1,
+                    );
+                }
+            }
+        } else {
+            $CountAdd++;
+            unless ($Self->{DryRun}) {
+                $GroupObject->RoleAdd(
                     ID      => $RoleID,
                     Name    => $Name,
                     Comment => $Comment,
                     ValidID => $ValidID,
                     UserID  => 1,
-                ) && $CountUpdate++;
+                );
             }
-        } else {
-            $GroupObject->RoleAdd(
-                ID      => $RoleID,
-                Name    => $Name,
-                Comment => $Comment,
-                ValidID => $ValidID,
-                UserID  => 1,
-            ) && $CountAdd++;
         }
     }
 }
@@ -158,7 +164,7 @@ sub Run {
 
     $Self->{Data} = $Self->_SlurpCSV();
     $Self->_CheckUnique() or return $Self->ExitCodeError();
-    $Self->_StoreData() unless $Self->{DryRun};
+    $Self->_StoreData();
     $Self->Print("$CountUnchanged roles unchanged.") if ($CountUnchanged);
     $Self->Print("$CountAdd roles added.") if ($CountAdd);
     $Self->Print("$CountUpdate roles updated.") if ($CountUpdate);
