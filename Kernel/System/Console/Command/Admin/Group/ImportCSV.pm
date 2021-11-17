@@ -6,7 +6,7 @@
 # did not receive this file, see https://www.gnu.org/licenses/gpl-3.0.txt.
 # --
 
-package Kernel::System::Console::Command::Admin::Role::ImportCSV;
+package Kernel::System::Console::Command::Admin::Group::ImportCSV;
 
 use strict;
 use warnings;
@@ -20,8 +20,7 @@ our @ObjectDependencies = (
     'Kernel::System::Group',
 );
 our $GroupObject = $Kernel::OM->Get('Kernel::System::Group');
-our %ValidList = $Kernel::OM->Get('Kernel::System::Valid')->ValidList();
-our %ValidStrings = reverse %ValidList;
+our %ValidStrings = reverse $Kernel::OM->Get('Kernel::System::Valid')->ValidList();
 
 our $CountUnchanged = 0;
 our $CountAdd = 0;
@@ -31,10 +30,10 @@ our $CountError = 0;
 sub Configure {
     my ( $Self, %Param ) = @_;
 
-    $Self->Description('Connect a users to roles.');
+    $Self->Description('Connect a users to groups.');
     $Self->AddOption(
         Name        => 'source-path',
-        Description => "Name of the role_user CSV file.",
+        Description => "Name of the group_user CSV file.",
         Required    => 1,
         HasValue    => 1,
         ValueRegex  => qr/.*/smx,
@@ -120,23 +119,23 @@ sub _StoreData {
             next;
         }
 
-        my $RoleID = $GroupObject->RoleLookup(Role => $Name);
+        my $GroupID = $GroupObject->GroupLookup(Group => $Name);
 
-        if ($RoleID) {
-            my %RoleData = $GroupObject->RoleGet(
-                ID      => $RoleID,
+        if ($GroupID) {
+            my %GroupData = $GroupObject->GroupGet(
+                ID      => $GroupID,
             );
             if (
-                $RoleData{"Name"} eq $Name &&
-                $RoleData{"Comment"} eq $Comment &&
-                $RoleData{"ValidID"} eq $ValidID
+                $GroupData{"Name"} eq $Name &&
+                $GroupData{"Comment"} eq $Comment &&
+                $GroupData{"ValidID"} eq $ValidID
             ) {
                 $CountUnchanged++;
             } else {
                 $CountUpdate++;
                 unless ($Self->{DryRun}) {
-                    $GroupObject->RoleUpdate(
-                        ID      => $RoleID,
+                    $GroupObject->GroupUpdate(
+                        ID      => $GroupID,
                         Name    => $Name,
                         Comment => $Comment,
                         ValidID => $ValidID,
@@ -147,8 +146,8 @@ sub _StoreData {
         } else {
             $CountAdd++;
             unless ($Self->{DryRun}) {
-                $GroupObject->RoleAdd(
-                    ID      => $RoleID,
+                $GroupObject->GroupAdd(
+                    ID      => $GroupID,
                     Name    => $Name,
                     Comment => $Comment,
                     ValidID => $ValidID,
@@ -165,9 +164,9 @@ sub Run {
     $Self->{Data} = $Self->_SlurpCSV();
     $Self->_CheckUnique() or return $Self->ExitCodeError();
     $Self->_StoreData();
-    $Self->Print("$CountUnchanged roles unchanged.") if ($CountUnchanged);
-    $Self->Print("$CountAdd roles added.") if ($CountAdd);
-    $Self->Print("$CountUpdate roles updated.") if ($CountUpdate);
+    $Self->Print("$CountUnchanged groups unchanged.") if ($CountUnchanged);
+    $Self->Print("$CountAdd groups added.") if ($CountAdd);
+    $Self->Print("$CountUpdate groups updated.") if ($CountUpdate);
     $Self->Print("$CountError faulty input lines in file " . $Self->{SourcePath}) if ($CountError);
     return $Self->ExitCodeOk();
 }
