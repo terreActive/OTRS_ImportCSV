@@ -139,7 +139,7 @@ sub _StoreData {
             if (
                 $QueueData{"Name"} eq $Name &&
                 $QueueData{"GroupID"} eq $GroupID &&
-                $QueueData{"Comments"} eq $Comments &&
+                $QueueData{"Comment"} eq $Comments &&
                 $QueueData{"ValidID"} eq $ValidID
             ) {
                 $CountUnchanged++;
@@ -147,12 +147,16 @@ sub _StoreData {
                 $CountUpdate++;
                 unless ($Self->{DryRun}) {
                     $QueueObject->QueueUpdate(
-                        QueueID => $QueueID,
-                        Name    => $Name,
-                        GroupID => $GroupID,
-                        Comment => $Comments,
-                        ValidID => $ValidID,
-                        UserID  => 1,
+                        QueueID         => $QueueID,
+                        Name            => $Name,
+                        GroupID         => $GroupID,
+                        Comment         => $Comments,
+                        ValidID         => $ValidID,
+                        SystemAddressID => $QueueData{SystemAddressID},
+                        SalutationID    => $QueueData{SalutationID},
+                        SignatureID     => $QueueData{SignatureID},
+                        FollowUpID      => $QueueData{FollowUpID},
+                        UserID          => 1,
                     );
                 }
             }

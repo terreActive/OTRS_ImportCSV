@@ -12,7 +12,8 @@
     <BuildHost>?</BuildHost>
     <Filelist>
         <File Permission="644" Location="doc/en/ImportCSV.pod"/>
-        <File Permission="644" Location="ImportCSV/Kernel/System/Console/Command/Admin/Role/ImportCSV.pm" />
-        <File Permission="644" Location="ImportCSV/Kernel/System/Console/Command/Admin/RoleUser/ImportCSV.pm" />
+        <File Permission="644" Location="Kernel/System/Console/Command/Admin/Queue/ImportCSV.pm" />
+        <File Permission="644" Location="Kernel/System/Console/Command/Admin/Role/ImportCSV.pm" />
+        <File Permission="644" Location="Kernel/System/Console/Command/Admin/RoleUser/ImportCSV.pm" />
     </Filelist>
 </otrs_package>
