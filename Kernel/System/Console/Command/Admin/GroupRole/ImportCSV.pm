@@ -6,7 +6,7 @@
 # did not receive this file, see https://www.gnu.org/licenses/gpl-3.0.txt.
 # --
 
-package Kernel::System::Console::Command::Admin::Group::ImportCSV;
+package Kernel::System::Console::Command::Admin::GroupRole::ImportCSV;
 
 use strict;
 use warnings;
@@ -20,11 +20,12 @@ our @ObjectDependencies = (
     'Kernel::System::Group',
 );
 our $GroupObject = $Kernel::OM->Get('Kernel::System::Group');
-our %ValidStrings = reverse $Kernel::OM->Get('Kernel::System::Valid')->ValidList();
+our %GroupFullnames;
+our %GroupShortnames;
 
 our $CountUnchanged = 0;
 our $CountAdd = 0;
-our $CountUpdate = 0;
+our $CountRemove = 0;
 our $CountError = 0;
 
 sub Configure {
@@ -69,7 +70,7 @@ sub PreRun {
     }
 
     # check header line
-    my $headers = join(",", "name", "comments", "validity");
+    my $headers = join(",", "role", "groupname", "permissionkey", "permissionvalue");
     open my $file, '<:encoding(UTF-8)', $Self->{SourcePath};
     my $firstLine = <$file>;
     close $file;
@@ -98,76 +99,62 @@ sub _SlurpCSV() {
     return \@Data;
 }
 
-sub _CheckUnique() {
-    my ( $Self, %Param ) = @_;
-
-    my %keys = ();
-    my $ok = 1;
-    for (@{$Self->{Data}}) {
-        my $key = $_->[0];
-        if ($keys{$key}) {
-            $Self->PrintError("Duplicate: $key");
-            $ok = 0;
-        }
-        $keys{$key} = $_->[0];
-    }
-    return $ok;
-}
-
 sub _StoreData {
     my ( $Self, %Param ) = @_;
 
     for (@{$Self->{Data}}) {
-        my ($Name, $Comment, $Validity) = @$_;
+        my ($Role, $Groupname, $PermissionKey, $PermissionValue) = @$_;
 
-        my $ValidID = $ValidStrings{$Validity};
-        unless ($ValidID) {
-            $Self->PrintError("Invalid validity: $Validity");
+        my $GroupID = $Self->_GroupLookupByShortname(Group => $Groupname);
+        unless ($GroupID) {
+            $Self->PrintError("Invalid groupname $Groupname");
             $CountError++;
             next;
         }
 
-        my $GroupID = $GroupObject->GroupLookup(Group => $Name);
+        my $RoleID = $GroupObject->RoleLookup(Role => $Role);
+        unless ($RoleID) {
+            $Self->PrintError("Invalid role $Role");
+            $CountError++;
+            next;
+        }
 
+        my %RoleList;
         if ($GroupID) {
-            my %GroupData = $GroupObject->GroupGet(
-                ID      => $GroupID,
+            %RoleList = $GroupObject->PermissionGroupRoleGet(
+                GroupID => $GroupID,
+                Type    => $PermissionKey,
             );
-            if (
-                $GroupData{"Name"} eq $Name &&
-                $GroupData{"Comment"} eq $Comment &&
-                $GroupData{"ValidID"} eq $ValidID
-            ) {
-                $CountUnchanged++;
-            } else {
-                $CountUpdate++;
-                if ($Self->{Verbose}) {
-                    $Self->Print("  updating group $Name");
-                }
-                unless ($Self->{DryRun}) {
-                    $GroupObject->GroupUpdate(
-                        ID      => $GroupID,
-                        Name    => $Name,
-                        Comment => $Comment,
-                        ValidID => $ValidID,
-                        UserID  => 1,
-                    );
-                }
-            }
-        } else {
-            $CountAdd++;
+        }
+
+        if ($RoleList{$RoleID} && ! $PermissionValue) {
+            $CountRemove++;
             if ($Self->{Verbose}) {
-                $Self->Print("  adding group $Name");
+                $Self->Print("  removing group $Groupname from role $Role");
             }
             unless ($Self->{DryRun}) {
-                $GroupObject->GroupAdd(
-                    ID      => $GroupID,
-                    Name    => $Name,
-                    Comment => $Comment,
-                    ValidID => $ValidID,
-                    UserID  => 1,
+                $GroupObject->PermissionGroupRoleAdd(
+                    GID        => $GroupID,
+                    RID        => $RoleID,
+                    Permission => {$PermissionKey => $PermissionValue},
+                    UserID     => 1,
                 );
             }
+        } elsif (! $RoleList{$RoleID} && $PermissionValue) {
+            $CountAdd++;
+            if ($Self->{Verbose}) {
+                $Self->Print("  adding group $Groupname to role $Role");
+            }
+            unless ($Self->{DryRun}) {
+                $GroupObject->PermissionGroupRoleAdd(
+                    GID        => $GroupID,
+                    RID        => $RoleID,
+                    Permission => {$PermissionKey => $PermissionValue},
+                    UserID     => 1,
+                );
+            }
+        } else {
+            $CountUnchanged++;
         }
     }
 }
@@ -175,13 +162,39 @@ sub _StoreData {
 sub Run {
     my ( $Self, %Param ) = @_;
 
+    $Self->_InitializeGroupLists();
     $Self->{Data} = $Self->_SlurpCSV();
-    $Self->_CheckUnique() or return $Self->ExitCodeError();
     $Self->_StoreData();
-    $Self->Print("$CountUnchanged groups unchanged.") if ($CountUnchanged);
-    $Self->Print("$CountAdd groups added.") if ($CountAdd);
-    $Self->Print("$CountUpdate groups updated.") if ($CountUpdate);
+    $Self->Print("$CountUnchanged group-role permission unchanged.") if ($CountUnchanged);
+    $Self->Print("$CountAdd group-role permissions added.") if ($CountAdd);
+    $Self->Print("$CountRemove group-role permissions removed.") if ($CountRemove);
     $Self->Print("$CountError faulty input lines in file " . $Self->{SourcePath}) if ($CountError);
     return $Self->ExitCodeOk();
+}
+
+# Groups do not have to specified with full name.
+# The first word of the name is supposedly unique.
+sub _InitializeGroupLists {
+    my ( $Self, %Param ) = @_;
+
+    my %Groups = $GroupObject->GroupList();
+    for my $id (keys %Groups) {
+        $GroupFullnames{$Groups{$id}} = $id;
+        my @short = split(/ /, $Groups{$id}, 2);
+        $GroupShortnames{$short[0]} = $id;
+    }
+}
+
+sub _GroupLookupByShortname {
+    my ( $Self, %Param ) = @_;
+
+    my $Group = $Param{Group};
+    die ("Need Group") unless ($Group);
+
+    my $GroupID = $GroupFullnames{$Group};
+    return $GroupID if ($GroupID);
+
+    $GroupID = $GroupShortnames{$Group};
+    return $GroupID if ($GroupID);
 }
 1;
