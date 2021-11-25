@@ -35,23 +35,28 @@ our $CountError = 0;
 sub Configure {
     my ( $Self, %Param ) = @_;
 
-    $Self->Description('import queues from CSV file');
+    $Self->Description('Import queues from CSV file');
     $Self->AddOption(
         Name        => 'source-path',
-        Description => "Name of the queue.csv file.",
+        Description => 'Name of the queue CSV file.',
         Required    => 1,
         HasValue    => 1,
         ValueRegex  => qr/.*/smx,
     );
     $Self->AddOption(
         Name        => 'dry-run',
-        Description => 'Test only, do not apply any change to the database.',
+        Description => 'Test only, do not do any change to the database.',
         Required    => 0,
         HasValue    => 0,
         ValueRegex  => qr/.*/smx,
     );
-
-    return;
+    $Self->AddOption(
+        Name        => 'verbose',
+        Description => 'Report every updated item',
+        Required    => 0,
+        HasValue    => 0,
+        ValueRegex  => qr/.*/smx,
+    );
 }
 
 sub PreRun {
@@ -59,6 +64,7 @@ sub PreRun {
 
     $Self->{SourcePath} = $Self->GetOption('source-path');
     $Self->{DryRun} = $Self->GetOption('dry-run');
+    $Self->{Verbose} = $Self->GetOption('verbose');
 
     # check file exists
     if ( ! -f $Self->{SourcePath} ) {
@@ -109,84 +115,6 @@ sub _CheckUnique() {
         $keys{$key} = $_->[0];
     }
     return $ok;
-}
-
-sub _StoreData {
-    my ( $Self, %Param ) = @_;
-
-    for (@{$Self->{Data}}) {
-        my ($Name, $Group, $Comments, $Validity) = @$_;
-
-        my $ValidID = $ValidStrings{$Validity};
-        unless ($ValidID) {
-            $Self->PrintError("Invalid validity: $Validity");
-            $CountError++;
-            next;
-        }
-        my $GroupID = $Self->_GroupLookupByShortname(Group => $Group);
-        unless ($GroupID) {
-            $Self->PrintError("Invalid Group $Group");
-            $CountError++;
-            next;
-        }
-
-        my $QueueID = $Self->_QueueLookup(Queue => $Name, Silent => 1);
-
-        if ($QueueID) {
-            my %QueueData = $QueueObject->QueueGet(
-                ID      => $QueueID,
-            );
-            if (
-                $QueueData{"Name"} eq $Name &&
-                $QueueData{"GroupID"} eq $GroupID &&
-                $QueueData{"Comment"} eq $Comments &&
-                $QueueData{"ValidID"} eq $ValidID
-            ) {
-                $CountUnchanged++;
-            } else {
-                $CountUpdate++;
-                unless ($Self->{DryRun}) {
-                    $QueueObject->QueueUpdate(
-                        QueueID         => $QueueID,
-                        Name            => $Name,
-                        GroupID         => $GroupID,
-                        Comment         => $Comments,
-                        ValidID         => $ValidID,
-                        SystemAddressID => $QueueData{SystemAddressID},
-                        SalutationID    => $QueueData{SalutationID},
-                        SignatureID     => $QueueData{SignatureID},
-                        FollowUpID      => $QueueData{FollowUpID},
-                        UserID          => 1,
-                    );
-                }
-            }
-        } else {
-            $CountAdd++;
-            unless ($Self->{DryRun}) {
-                $QueueObject->QueueAdd(
-                    Name    => $Name,
-                    GroupID => $GroupID,
-                    Comment => $Comments,
-                    ValidID => $ValidID,
-                    UserID  => 1,
-                );
-            }
-        }
-    }
-}
-
-sub Run {
-    my ( $Self, %Param ) = @_;
-
-    $Self->{Data} = $Self->_SlurpCSV();
-    $Self->_CheckUnique() or return $Self->ExitCodeError();
-    $Self->_InitializeGroupLists();
-    $Self->_StoreData();
-    $Self->Print("$CountUnchanged queues unchanged.") if ($CountUnchanged);
-    $Self->Print("$CountAdd queues added.") if ($CountAdd);
-    $Self->Print("$CountUpdate queues updated.") if ($CountUpdate);
-    $Self->Print("$CountError faulty input lines in file " . $Self->{SourcePath}) if ($CountError);
-    return $Self->ExitCodeOk();
 }
 
 # Groups do not have to specified with full name.
@@ -258,5 +186,122 @@ sub _QueueLookup {
     }
 
     return $ReturnData;
+}
+
+sub _StoreData {
+    my ( $Self, %Param ) = @_;
+
+    for (@{$Self->{Data}}) {
+        my ($Name, $Group, $Comments, $Validity) = @$_;
+
+        my $ValidID = $ValidStrings{$Validity};
+        unless ($ValidID) {
+            $Self->PrintError("Invalid validity: $Validity");
+            $CountError++;
+            next;
+        }
+        my $GroupID = $Self->_GroupLookupByShortname(Group => $Group);
+        unless ($GroupID) {
+            $Self->PrintError("Invalid Group $Group");
+            $CountError++;
+            next;
+        }
+
+        my $QueueID = $Self->_QueueLookup(Queue => $Name, Silent => 1);
+
+        if ($QueueID) {
+            my %QueueData = $QueueObject->QueueGet(
+                ID      => $QueueID,
+            );
+            if (
+                $QueueData{"Name"} eq $Name &&
+                $QueueData{"GroupID"} eq $GroupID &&
+                $QueueData{"Comment"} eq $Comments &&
+                $QueueData{"ValidID"} eq $ValidID
+            ) {
+                $CountUnchanged++;
+            } else {
+                $CountUpdate++;
+                if ($Self->{Verbose}) {
+                    $Self->Print("  updating queue $Name($QueueID):");
+                    if ($QueueData{"Name"} ne $Name) {
+                        $Self->Print("    Name->" . $Name);
+                    }
+                    if ($QueueData{"GroupID"} ne $GroupID) {
+                        $Self->Print("    GroupID->" . $GroupID);
+                    }
+                    if ($QueueData{"Comment"} ne $Comments) {
+                        $Self->Print("    Comment->" . $Comments);
+                    }
+                    if ($QueueData{"ValidID"} != $ValidID) {
+                        $Self->Print("    ValidID->" . $ValidID);
+                    }
+                }
+                unless ($Self->{DryRun}) {
+                    $QueueObject->QueueUpdate(
+                        QueueID         => $QueueID,
+                        Name            => $Name,
+                        GroupID         => $GroupID,
+                        Comment         => $Comments,
+                        ValidID         => $ValidID,
+                        SystemAddressID => $QueueData{SystemAddressID},
+                        SalutationID    => $QueueData{SalutationID},
+                        SignatureID     => $QueueData{SignatureID},
+                        FollowUpID      => $QueueData{FollowUpID},
+                        UserID          => 1,
+                    );
+                }
+            }
+        } else {
+            $CountAdd++;
+            if ($Self->{Verbose}) {
+                $Self->Print("  adding queue $Name");
+            }
+            unless ($Self->{DryRun}) {
+                $QueueObject->QueueAdd(
+                    Name    => $Name,
+                    GroupID => $GroupID,
+                    Comment => $Comments,
+                    ValidID => $ValidID,
+                    UserID  => 1,
+                );
+            }
+        }
+    }
+}
+
+sub _PrintStatistics {
+    my ( $Self, %Param ) = @_;
+
+    for my $count ("Unchanged", "Added", "Updated", "Removed") {
+        if ($Param{$count}) {
+            my $message = $Param{$count} . " " . $Param{ItemName} . " ";
+            if ($Self->{DryRun}) {
+                $message .= "would be "
+            }
+            $message .= lc($count) . ".";
+            $Self->Print($message);
+        }
+    }
+    if ($Param{InputErrors}) {
+        $Self->Print($Param{InputErrors} . " faulty input lines in file " . $Self->{SourcePath});
+    }
+}
+
+sub Run {
+    my ( $Self, %Param ) = @_;
+
+    $Self->{Data} = $Self->_SlurpCSV();
+    $Self->_CheckUnique() or return $Self->ExitCodeError();
+    $Self->_InitializeGroupLists();
+    $Self->_StoreData();
+    $Self->_PrintStatistics(
+        ItemName    => "queues",
+        Unchanged   => $CountUnchanged,
+        Added       => $CountAdd,
+        Updated     => $CountUpdate,
+        InputErrors => $CountError,
+    );
+    return $Self->ExitCodeOk();
 }
 1;

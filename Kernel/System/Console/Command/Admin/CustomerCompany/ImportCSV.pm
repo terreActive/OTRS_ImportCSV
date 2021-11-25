@@ -30,10 +30,10 @@ our $CountError = 0;
 sub Configure {
     my ( $Self, %Param ) = @_;
 
-    $Self->Description('Import customer companies.');
+    $Self->Description('Import customer companies from CSV file.');
     $Self->AddOption(
         Name        => 'source-path',
-        Description => "Name of the customer_company CSV file.",
+        Description => 'Name of the customer_company CSV file.',
         Required    => 1,
         HasValue    => 1,
         ValueRegex  => qr/.*/smx,

@@ -22,18 +22,18 @@ our @ObjectDependencies = (
 );
 our $UserObject = $Kernel::OM->Get('Kernel::System::User');
 our $GroupObject = $Kernel::OM->Get('Kernel::System::Group');
-our $CountMissingUser = 0;
-our $CountMissingRole = 0;
+
 our $CountAdd = 0;
-our $CountRemove = 0;
+our $CountRemoved = 0;
+our $CountError = 0;
 
 sub Configure {
     my ( $Self, %Param ) = @_;
 
-    $Self->Description('Connect a users to roles.');
+    $Self->Description('Connect users to roles.');
     $Self->AddOption(
         Name        => 'source-path',
-        Description => "Name of the role_user CSV file.",
+        Description => 'Name of the role_user CSV file.',
         Required    => 1,
         HasValue    => 1,
         ValueRegex  => qr/.*/smx,
@@ -45,16 +45,23 @@ sub Configure {
         HasValue    => 0,
         ValueRegex  => qr/.*/smx,
     );
+    $Self->AddOption(
+        Name        => 'verbose',
+        Description => 'Report every updated item',
+        Required    => 0,
+        HasValue    => 0,
+        ValueRegex  => qr/.*/smx,
+    );
 
     return;
 }
 
 sub PreRun {
-
     my ( $Self, %Param ) = @_;
 
     $Self->{SourcePath} = $Self->GetOption('source-path');
     $Self->{DryRun} = $Self->GetOption('dry-run');
+    $Self->{Verbose} = $Self->GetOption('verbose');
 
     # check file exists
     if ( ! -f $Self->{SourcePath} ) {
@@ -63,7 +70,7 @@ sub PreRun {
 
     # check header line
     my $headers = join(",", "user", "role", "validity");
-    open my $file, '<', $Self->{SourcePath};
+    open my $file, '<:encoding(UTF-8)', $Self->{SourcePath};
     my $firstLine = <$file>;
     close $file;
     chomp $firstLine;
@@ -78,8 +85,8 @@ sub _SlurpCSV() {
     my ( $Self, %Param ) = @_;
 
     my @Data;
-    $Self->Print("<yellow>Reading CSV file $Self->{SourcePath}...</yellow>\n");
-    open my $file, '<', $Self->{SourcePath};
+    $Self->Print("Reading CSV file $Self->{SourcePath}...");
+    open my $file, '<:encoding(UTF-8)', $Self->{SourcePath};
     my $csv = Text::CSV->new;
     <$file>; # skip headers
     while (<$file>) {
@@ -99,25 +106,23 @@ sub _CheckUnique() {
     for (@{$Self->{Data}}) {
         unless ($_->[0]) {
             $Self->PrintError("Empty user name");
-            $error++;
+            $CountError++;
             next;
         }
         unless ($_->[1]) {
             $Self->PrintError("Empty role name");
             return $Self->ExitCodeError();
-            $error++;
+            $CountError++;
             next;
         }
         my $key = $_->[0] . ":" . $_->[1];
         if ($keys{$key} && $keys{$key} ne $_->[2]) {
             $Self->PrintError("Inconsitent Duplicates $key");
-            return $Self->ExitCodeError();
-            $error++;
+            $CountError++;
             next;
         }
         $keys{$key} = $_->[2];
     }
-    return $Self->ExitCodeError() if ($error);
 }
 
 sub _StoreData {
@@ -128,8 +133,8 @@ sub _StoreData {
 
         my $UserID = $UserObject->UserLookup(UserLogin => $User, Silent => 1);
         unless ($UserID) {
-            $Self->Print("unknown user $User");
-            $CountMissingUser++;
+            $Self->PrintError("Invalid user $User");
+            $CountError++;
             next;
         }
         my %UserData = $UserObject->GetUserData(UserID => $UserID);
@@ -137,8 +142,8 @@ sub _StoreData {
 
         my $RoleID = $GroupObject->RoleLookup(Role => $Role, Silent => 1);
         unless ($RoleID) {
-            $Self->Print("unknown role $Role");
-            $CountMissingRole++;
+            $Self->Print("Invalid role $Role");
+            $CountError++;
             next;
         }
         my %RoleData = $GroupObject->RoleGet(ID => $RoleID);
@@ -170,7 +175,7 @@ sub _StoreData {
         if ($Validity eq "invalid") {
             if (grep {$Role eq $_} values %RoleList) {
                 $Self->Print("Removing user $User from role $Role");
-                $CountRemove++;
+                $CountRemoved++;
                 unless ($Self->{DryRun}) {
                     if ( ! $GroupObject->PermissionRoleUserAdd(
                         UID    => $UserID,
@@ -187,36 +192,36 @@ sub _StoreData {
     }
 }
 
+sub _PrintStatistics {
+    my ( $Self, %Param ) = @_;
+
+    for my $count ("Unchanged", "Added", "Updated", "Removed") {
+        if ($Param{$count}) {
+            my $message = $Param{$count} . " " . $Param{ItemName} . " ";
+            if ($Self->{DryRun}) {
+                $message .= "would be "
+            }
+            $message .= lc($count) . ".";
+            $Self->Print($message);
+        }
+    }
+    if ($Param{InputErrors}) {
+        $Self->Print($Param{InputErrors} . " errors in " . $Self->{SourcePath});
+    }
+}
+
 sub Run {
     my ( $Self, %Param ) = @_;
 
     $Self->{Data} = $Self->_SlurpCSV();
     $Self->_CheckUnique();
-    $Self->_StoreData() unless $Self->{DryRun};
-    $Self->Print("<yellow>$CountMissingUser missing Users.</yellow>\n") if ($CountMissingUser);
-    $Self->Print("<yellow>$CountMissingRole missing Roles.</yellow>\n") if ($CountMissingRole);
-    $Self->Print("<yellow>$CountAdd links added.</yellow>\n") if ($CountAdd);
-    $Self->Print("<yellow>$CountRemove links removed.</yellow>\n") if ($CountRemove);
+    $Self->_StoreData();
+    $Self->_PrintStatistics(
+        ItemName    => "user roles",
+        Added       => $CountAdd,
+        Removed     => $CountRemoved,
+        InputErrors => $CountError,
+    );
     return $Self->ExitCodeOk();
 }
-
-sub SpareCodeStolen {
-    my ( $Self, %Param ) = @_;
-    # add user 2 role
-    if (
-        ! $GroupObject->PermissionRoleUserAdd(
-            UID    => $Self->{UserID},
-            RID    => $Self->{RoleID},
-            Active => 1,
-            UserID => 1,
-        )
-        ) {
-        $Self->PrintError("Can't add user to role.");
-        return $Self->ExitCodeError();
-    }
-
-    $Self->Print("Done.\n");
-    return $Self->ExitCodeOk();
-}
-
 1;

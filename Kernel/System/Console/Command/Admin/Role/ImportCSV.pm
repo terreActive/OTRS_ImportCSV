@@ -20,8 +20,7 @@ our @ObjectDependencies = (
     'Kernel::System::Group',
 );
 our $GroupObject = $Kernel::OM->Get('Kernel::System::Group');
-our %ValidList = $Kernel::OM->Get('Kernel::System::Valid')->ValidList();
-our %ValidStrings = reverse %ValidList;
+our %ValidStrings = reverse $Kernel::OM->Get('Kernel::System::Valid')->ValidList();
 
 our $CountUnchanged = 0;
 our $CountAdd = 0;
@@ -31,10 +30,10 @@ our $CountError = 0;
 sub Configure {
     my ( $Self, %Param ) = @_;
 
-    $Self->Description('Connect a users to roles.');
+    $Self->Description('Import roles from CSV file.');
     $Self->AddOption(
         Name        => 'source-path',
-        Description => "Name of the role_user CSV file.",
+        Description => 'Name of the role CSV file.',
         Required    => 1,
         HasValue    => 1,
         ValueRegex  => qr/.*/smx,
@@ -46,8 +45,13 @@ sub Configure {
         HasValue    => 0,
         ValueRegex  => qr/.*/smx,
     );
-
-    return;
+    $Self->AddOption(
+        Name        => 'verbose',
+        Description => 'Report every updated item',
+        Required    => 0,
+        HasValue    => 0,
+        ValueRegex  => qr/.*/smx,
+    );
 }
 
 sub PreRun {
@@ -55,6 +59,7 @@ sub PreRun {
 
     $Self->{SourcePath} = $Self->GetOption('source-path');
     $Self->{DryRun} = $Self->GetOption('dry-run');
+    $Self->{Verbose} = $Self->GetOption('verbose');
 
     # check file exists
     if ( ! -f $Self->{SourcePath} ) {
@@ -127,13 +132,21 @@ sub _StoreData {
                 ID      => $RoleID,
             );
             if (
-                $RoleData{"Name"} eq $Name &&
                 $RoleData{"Comment"} eq $Comment &&
                 $RoleData{"ValidID"} eq $ValidID
             ) {
                 $CountUnchanged++;
             } else {
                 $CountUpdate++;
+                if ($Self->{Verbose}) {
+                    $Self->Print("  updating role $Name:");
+                    if ($RoleData{"Comment"} ne $Comment) {
+                        $Self->Print("    Comment->" . $Comment);
+                    }
+                    if ($RoleData{"ValidID"} != $ValidID) {
+                        $Self->Print("    ValidID->" . $ValidID);
+                    }
+                }
                 unless ($Self->{DryRun}) {
                     $GroupObject->RoleUpdate(
                         ID      => $RoleID,
@@ -146,6 +159,9 @@ sub _StoreData {
             }
         } else {
             $CountAdd++;
+            if ($Self->{Verbose}) {
+                $Self->Print("  adding role $Name");
+            }
             unless ($Self->{DryRun}) {
                 $GroupObject->RoleAdd(
                     ID      => $RoleID,
@@ -159,16 +175,37 @@ sub _StoreData {
     }
 }
 
+sub _PrintStatistics {
+    my ( $Self, %Param ) = @_;
+
+    for my $count ("Unchanged", "Added", "Updated", "Removed") {
+        if ($Param{$count}) {
+            my $message = $Param{$count} . " " . $Param{ItemName} . " ";
+            if ($Self->{DryRun}) {
+                $message .= "would be "
+            }
+            $message .= lc($count) . ".";
+            $Self->Print($message);
+        }
+    }
+    if ($Param{InputErrors}) {
+        $Self->Print($Param{InputErrors} . " faulty input lines in file " . $Self->{SourcePath});
+    }
+}
+
 sub Run {
     my ( $Self, %Param ) = @_;
 
     $Self->{Data} = $Self->_SlurpCSV();
     $Self->_CheckUnique() or return $Self->ExitCodeError();
     $Self->_StoreData();
-    $Self->Print("$CountUnchanged roles unchanged.") if ($CountUnchanged);
-    $Self->Print("$CountAdd roles added.") if ($CountAdd);
-    $Self->Print("$CountUpdate roles updated.") if ($CountUpdate);
-    $Self->Print("$CountError faulty input lines in file " . $Self->{SourcePath}) if ($CountError);
+    $Self->_PrintStatistics(
+        ItemName    => "roles",
+        Unchanged   => $CountUnchanged,
+        Added       => $CountAdd,
+        Updated     => $CountUpdate,
+        InputErrors => $CountError,
+    );
     return $Self->ExitCodeOk();
 }
 1;

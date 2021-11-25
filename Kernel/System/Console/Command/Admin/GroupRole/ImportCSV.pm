@@ -25,16 +25,16 @@ our %GroupShortnames;
 
 our $CountUnchanged = 0;
 our $CountAdd = 0;
-our $CountRemove = 0;
+our $CountRemoved = 0;
 our $CountError = 0;
 
 sub Configure {
     my ( $Self, %Param ) = @_;
 
-    $Self->Description('Connect a users to groups.');
+    $Self->Description('Connect roles to groups.');
     $Self->AddOption(
         Name        => 'source-path',
-        Description => "Name of the group_user CSV file.",
+        Description => 'Name of the group_role CSV file.',
         Required    => 1,
         HasValue    => 1,
         ValueRegex  => qr/.*/smx,
@@ -128,7 +128,7 @@ sub _StoreData {
         }
 
         if ($RoleList{$RoleID} && ! $PermissionValue) {
-            $CountRemove++;
+            $CountRemoved++;
             if ($Self->{Verbose}) {
                 $Self->Print("  removing group $Groupname from role $Role");
             }
@@ -159,19 +159,6 @@ sub _StoreData {
     }
 }
 
-sub Run {
-    my ( $Self, %Param ) = @_;
-
-    $Self->_InitializeGroupLists();
-    $Self->{Data} = $Self->_SlurpCSV();
-    $Self->_StoreData();
-    $Self->Print("$CountUnchanged group-role permission unchanged.") if ($CountUnchanged);
-    $Self->Print("$CountAdd group-role permissions added.") if ($CountAdd);
-    $Self->Print("$CountRemove group-role permissions removed.") if ($CountRemove);
-    $Self->Print("$CountError faulty input lines in file " . $Self->{SourcePath}) if ($CountError);
-    return $Self->ExitCodeOk();
-}
-
 # Groups do not have to specified with full name.
 # The first word of the name is supposedly unique.
 sub _InitializeGroupLists {
@@ -196,5 +183,38 @@ sub _GroupLookupByShortname {
 
     $GroupID = $GroupShortnames{$Group};
     return $GroupID if ($GroupID);
+}
+
+sub _PrintStatistics {
+    my ( $Self, %Param ) = @_;
+
+    for my $count ("Unchanged", "Added", "Updated", "Removed") {
+        if ($Param{$count}) {
+            my $message = $Param{$count} . " " . $Param{ItemName} . " ";
+            if ($Self->{DryRun}) {
+                $message .= "would be "
+            }
+            $message .= lc($count) . ".";
+            $Self->Print($message);
+        }
+    }
+    if ($Param{InputErrors}) {
+        $Self->Print($Param{InputErrors} . " errors in " . $Self->{SourcePath});
+    }
+}
+
+sub Run {
+    my ( $Self, %Param ) = @_;
+
+    $Self->_InitializeGroupLists();
+    $Self->{Data} = $Self->_SlurpCSV();
+    $Self->_StoreData();
+    $Self->_PrintStatistics(
+        ItemName    => "group-role permissions",
+        Added       => $CountAdd,
+        Removed     => $CountRemoved,
+        InputErrors => $CountError,
+    );
+    return $Self->ExitCodeOk();
 }
 1;

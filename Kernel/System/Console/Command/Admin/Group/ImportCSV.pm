@@ -30,10 +30,10 @@ our $CountError = 0;
 sub Configure {
     my ( $Self, %Param ) = @_;
 
-    $Self->Description('Connect a users to groups.');
+    $Self->Description('Import groups from CSV file.');
     $Self->AddOption(
         Name        => 'source-path',
-        Description => "Name of the group_user CSV file.",
+        Description => 'Name of the group CSV file.',
         Required    => 1,
         HasValue    => 1,
         ValueRegex  => qr/.*/smx,
@@ -172,16 +172,37 @@ sub _StoreData {
     }
 }
 
+sub _PrintStatistics {
+    my ( $Self, %Param ) = @_;
+
+    for my $count ("Unchanged", "Added", "Updated", "Removed") {
+        if ($Param{$count}) {
+            my $message = $Param{$count} . " " . $Param{ItemName} . " ";
+            if ($Self->{DryRun}) {
+                $message .= "would be "
+            }
+            $message .= lc($count) . ".";
+            $Self->Print($message);
+        }
+    }
+    if ($Param{InputErrors}) {
+        $Self->Print($Param{InputErrors} . " faulty input lines in file " . $Self->{SourcePath});
+    }
+}
+
 sub Run {
     my ( $Self, %Param ) = @_;
 
     $Self->{Data} = $Self->_SlurpCSV();
     $Self->_CheckUnique() or return $Self->ExitCodeError();
     $Self->_StoreData();
-    $Self->Print("$CountUnchanged groups unchanged.") if ($CountUnchanged);
-    $Self->Print("$CountAdd groups added.") if ($CountAdd);
-    $Self->Print("$CountUpdate groups updated.") if ($CountUpdate);
-    $Self->Print("$CountError faulty input lines in file " . $Self->{SourcePath}) if ($CountError);
+    $Self->_PrintStatistics(
+        ItemName    => "groups",
+        Unchanged   => $CountUnchanged,
+        Added       => $CountAdd,
+        Updated     => $CountUpdate,
+        InputErrors => $CountError,
+    );
     return $Self->ExitCodeOk();
 }
 1;

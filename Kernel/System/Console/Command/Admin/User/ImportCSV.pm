@@ -30,10 +30,10 @@ our $CountError = 0;
 sub Configure {
     my ( $Self, %Param ) = @_;
 
-    $Self->Description('Import agent users.');
+    $Self->Description('Import agent users from CSV file.');
     $Self->AddOption(
         Name        => 'source-path',
-        Description => "Name of the user CSV file.",
+        Description => 'Name of the agent user CSV file.',
         Required    => 1,
         HasValue    => 1,
         ValueRegex  => qr/.*/smx,
