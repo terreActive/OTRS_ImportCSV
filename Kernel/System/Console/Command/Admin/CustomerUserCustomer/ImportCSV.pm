@@ -23,6 +23,7 @@ our @ObjectDependencies = (
 our $CustomerUserObject = $Kernel::OM->Get('Kernel::System::CustomerUser');
 our %ValidStrings = reverse $Kernel::OM->Get('Kernel::System::Valid')->ValidList();
 
+our $CountUnchanged = 0;
 our $CountAdd = 0;
 our $CountRemoved = 0;
 our $CountError = 0;
@@ -84,7 +85,7 @@ sub _SlurpCSV() {
     my ( $Self, %Param ) = @_;
 
     my %Data;
-    $Self->Print("Reading CSV file $Self->{SourcePath}...");
+    $Self->Print("Reading " . $Self->{SourcePath}) if ($Self->{Verbose});
     open my $file, '<:encoding(UTF-8)', $Self->{SourcePath};
     my $csv = Text::CSV->new;
     <$file>; # skip headers
@@ -114,9 +115,11 @@ sub _StoreData {
             next;
         }
         my @hasCustomerIDs = $CustomerUserObject->CustomerIDs(User => $Login);
+        $CountUnchanged += scalar(@hasCustomerIDs);
         my $lc = List::Compare->new(\@hasCustomerIDs, $shouldCustomerIDs);
         for ($lc->get_unique()) {
             $CountRemoved++;
+            $CountUnchanged--;
             if ($Self->{Verbose}) {
                 $Self->Print("Removing customer $_ from customer user $Login");
             }
@@ -177,6 +180,7 @@ sub Run {
     $Self->_StoreData();
     $Self->_PrintStatistics(
         ItemName    => "customer user affiliations",
+        Unchanged   => $CountUnchanged,
         Added       => $CountAdd,
         Removed     => $CountRemoved,
         InputErrors => $CountError,

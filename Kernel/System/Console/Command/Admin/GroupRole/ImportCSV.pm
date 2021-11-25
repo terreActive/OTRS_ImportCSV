@@ -86,7 +86,7 @@ sub _SlurpCSV() {
     my ( $Self, %Param ) = @_;
 
     my @Data;
-    $Self->Print("Reading CSV file $Self->{SourcePath}...");
+    $Self->Print("Reading " . $Self->{SourcePath}) if ($Self->{Verbose});
     open my $file, '<:encoding(UTF-8)', $Self->{SourcePath};
     my $csv = Text::CSV->new;
     <$file>; # skip headers
@@ -211,6 +211,7 @@ sub Run {
     $Self->_StoreData();
     $Self->_PrintStatistics(
         ItemName    => "group-role permissions",
+        Unchanged   => $CountUnchanged,
         Added       => $CountAdd,
         Removed     => $CountRemoved,
         InputErrors => $CountError,

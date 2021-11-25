@@ -23,6 +23,7 @@ our @ObjectDependencies = (
 our $UserObject = $Kernel::OM->Get('Kernel::System::User');
 our $GroupObject = $Kernel::OM->Get('Kernel::System::Group');
 
+our $CountUnchanged = 0;
 our $CountAdd = 0;
 our $CountRemoved = 0;
 our $CountError = 0;
@@ -85,7 +86,7 @@ sub _SlurpCSV() {
     my ( $Self, %Param ) = @_;
 
     my @Data;
-    $Self->Print("Reading CSV file $Self->{SourcePath}...");
+    $Self->Print("Reading " . $Self->{SourcePath}) if ($Self->{Verbose});
     open my $file, '<:encoding(UTF-8)', $Self->{SourcePath};
     my $csv = Text::CSV->new;
     <$file>; # skip headers
@@ -156,7 +157,9 @@ sub _StoreData {
 
         my %RoleList = $GroupObject->PermissionUserRoleGet(UserID => $UserID);
         if ($Validity eq "valid") {
-            unless (grep {$Role eq $_} values %RoleList) {
+            if (grep {$Role eq $_} values %RoleList) {
+                $CountUnchanged++;
+            } else {
                 $Self->Print("Adding user $User to role $Role");
                 $CountAdd++;
                 unless ($Self->{DryRun}) {
@@ -171,8 +174,7 @@ sub _StoreData {
                     }
                 }
             }
-        }
-        if ($Validity eq "invalid") {
+        } else {
             if (grep {$Role eq $_} values %RoleList) {
                 $Self->Print("Removing user $User from role $Role");
                 $CountRemoved++;
@@ -187,6 +189,8 @@ sub _StoreData {
                         return $Self->ExitCodeError();
                     }
                 }
+            } else {
+                $CountUnchanged++;
             }
         }
     }
@@ -218,6 +222,7 @@ sub Run {
     $Self->_StoreData();
     $Self->_PrintStatistics(
         ItemName    => "user roles",
+        Unchanged   => $CountUnchanged,
         Added       => $CountAdd,
         Removed     => $CountRemoved,
         InputErrors => $CountError,
