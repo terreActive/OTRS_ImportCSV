@@ -14,5 +14,6 @@ $CMD Admin::User::ImportCSV $OPTIONS $SOURCE/users.csv
 $CMD Admin::Role::ImportCSV $OPTIONS $SOURCE/roles.csv
 $CMD Admin::RoleUser::ImportCSV $OPTIONS $SOURCE/role_user.csv
 $CMD Admin::CustomerCompany::ImportCSV $OPTIONS $SOURCE/customer_company.csv
+$CMD Admin::CustomerGroup::ImportCSV $OPTIONS $SOURCE/customer_group.csv
 $CMD Admin::CustomerUser::ImportCSV $OPTIONS $SOURCE/customer_user.csv
 $CMD Admin::CustomerUserCustomer::ImportCSV $OPTIONS $SOURCE/customer_user_customer.csv

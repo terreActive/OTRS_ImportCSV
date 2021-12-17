@@ -11,15 +11,17 @@
     <BuildDate>?</BuildDate>
     <BuildHost>?</BuildHost>
     <Filelist>
-        <File Permission="644" Location="doc/en/ImportCSV.pod"/>
-        <File Permission="644" Location="Kernel/System/Console/Command/Admin/CustomerCompany/ImportCSV.pm" />
-        <File Permission="644" Location="Kernel/System/Console/Command/Admin/CustomerUserCustomer/ImportCSV.pm" />
-        <File Permission="644" Location="Kernel/System/Console/Command/Admin/CustomerUser/ImportCSV.pm" />
-        <File Permission="644" Location="Kernel/System/Console/Command/Admin/Group/ImportCSV.pm" />
-        <File Permission="644" Location="Kernel/System/Console/Command/Admin/GroupRole/ImportCSV.pm" />
-        <File Permission="644" Location="Kernel/System/Console/Command/Admin/Queue/ImportCSV.pm" />
-        <File Permission="644" Location="Kernel/System/Console/Command/Admin/Role/ImportCSV.pm" />
-        <File Permission="644" Location="Kernel/System/Console/Command/Admin/RoleUser/ImportCSV.pm" />
-        <File Permission="644" Location="Kernel/System/Console/Command/Admin/User/ImportCSV.pm" />
+        <File Permission="770" Location="bin/import_all_csv.sh"
+        <File Permission="660" Location="doc/en/ImportCSV.pod"/>
+        <File Permission="660" Location="Kernel/System/Console/Command/Admin/CustomerCompany/ImportCSV.pm" />
+        <File Permission="660" Location="Kernel/System/Console/Command/Admin/CustomerGroup/ImportCSV.pm" />
+        <File Permission="660" Location="Kernel/System/Console/Command/Admin/CustomerUserCustomer/ImportCSV.pm" />
+        <File Permission="660" Location="Kernel/System/Console/Command/Admin/CustomerUser/ImportCSV.pm" />
+        <File Permission="660" Location="Kernel/System/Console/Command/Admin/Group/ImportCSV.pm" />
+        <File Permission="660" Location="Kernel/System/Console/Command/Admin/GroupRole/ImportCSV.pm" />
+        <File Permission="660" Location="Kernel/System/Console/Command/Admin/Queue/ImportCSV.pm" />
+        <File Permission="660" Location="Kernel/System/Console/Command/Admin/Role/ImportCSV.pm" />
+        <File Permission="660" Location="Kernel/System/Console/Command/Admin/RoleUser/ImportCSV.pm" />
+        <File Permission="660" Location="Kernel/System/Console/Command/Admin/User/ImportCSV.pm" />
     </Filelist>
 </otrs_package>

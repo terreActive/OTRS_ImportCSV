@@ -21,7 +21,6 @@ our @ObjectDependencies = (
     'Kernel::System::CustomerUser',
 );
 our $CustomerUserObject = $Kernel::OM->Get('Kernel::System::CustomerUser');
-our %ValidStrings = reverse $Kernel::OM->Get('Kernel::System::Valid')->ValidList();
 
 our $CountUnchanged = 0;
 our $CountAdd = 0;
