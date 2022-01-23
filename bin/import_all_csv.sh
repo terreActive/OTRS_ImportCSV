@@ -8,10 +8,10 @@ OPTIONS=""  # "--verbose --dry-run"
 SOURCE="--source-path /opt/otrs/var/import"
 
 $CMD Admin::Group::ImportCSV $OPTIONS $SOURCE/groups.csv
+$CMD Admin::Role::ImportCSV $OPTIONS $SOURCE/roles.csv
 $CMD Admin::GroupRole::ImportCSV $OPTIONS $SOURCE/group_role.csv
 $CMD Admin::Queue::ImportCSV $OPTIONS $SOURCE/queue.csv
 $CMD Admin::User::ImportCSV $OPTIONS $SOURCE/users.csv
-$CMD Admin::Role::ImportCSV $OPTIONS $SOURCE/roles.csv
 $CMD Admin::RoleUser::ImportCSV $OPTIONS $SOURCE/role_user.csv
 $CMD Admin::CustomerCompany::ImportCSV $OPTIONS $SOURCE/customer_company.csv
 $CMD Admin::CustomerGroup::ImportCSV $OPTIONS $SOURCE/customer_group.csv

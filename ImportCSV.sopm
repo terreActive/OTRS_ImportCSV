@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <otrs_package version="1.0">
     <Name>ImportCSV</Name>
-    <Version>0.0.1</Version>
-    <Framework>6.0.x</Framework>
+    <Version>6.2.2</Version>
+    <Framework>6.2.x</Framework>
     <Vendor>terreActive AG</Vendor>
     <URL>http://www.terreactive.ch/</URL>
     <License>GNU AFFERO GENERAL PUBLIC LICENSE Version 3, November 2007</License>
@@ -11,7 +11,7 @@
     <BuildDate>?</BuildDate>
     <BuildHost>?</BuildHost>
     <Filelist>
-        <File Permission="770" Location="bin/import_all_csv.sh"
+        <File Permission="770" Location="bin/import_all_csv.sh"/>
         <File Permission="660" Location="doc/en/ImportCSV.pod"/>
         <File Permission="660" Location="Kernel/System/Console/Command/Admin/CustomerCompany/ImportCSV.pm" />
         <File Permission="660" Location="Kernel/System/Console/Command/Admin/CustomerGroup/ImportCSV.pm" />
@@ -24,4 +24,5 @@
         <File Permission="660" Location="Kernel/System/Console/Command/Admin/RoleUser/ImportCSV.pm" />
         <File Permission="660" Location="Kernel/System/Console/Command/Admin/User/ImportCSV.pm" />
     </Filelist>
+    <ModuleRequired>List::Compare</ModuleRequired>
 </otrs_package>
