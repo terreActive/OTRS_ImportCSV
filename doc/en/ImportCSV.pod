@@ -1,2 +1,203 @@
-This OPM package provides otrs.Console commands that read various CSV files for provisioing the OTRS database with users, groups, queues, etc.
-TDB
+=head1 NAME
+
+ImportCSV - Provision OTRS database from CSV files
+
+=head1 SYNOPSIS
+
+    PATH+=":/opt/otrs/bin"
+    otrs.Console.pl Admin::Group::ImportCSV <options>
+    otrs.Console.pl Admin::Role::ImportCSV <options>
+    otrs.Console.pl Admin::GroupRole::ImportCSV <options>
+    otrs.Console.pl Admin::Queue::ImportCSV <options>
+    otrs.Console.pl Admin::User::ImportCSV <options>
+    otrs.Console.pl Admin::RoleUser::ImportCSV <options>
+    otrs.Console.pl Admin::CustomerCompany::ImportCSV <options>
+    otrs.Console.pl Admin::CustomerGroup::ImportCSV <options>
+    otrs.Console.pl Admin::CustomerUser::ImportCSV <options>
+    otrs.Console.pl Admin::CustomerUserCustomer::ImportCSV <options>
+
+=head1 OPTIONS
+
+=over 4
+
+=item --source-path <CSVfile>
+
+The path to the CSV file to be read. This option is mandatory.
+
+=item --verbose
+
+Write progress info to the console, e.g. what is being done
+or what would be done, for each CSV line or Database row.
+
+=item --dry-run
+
+Exercise without changing the database. Can be used together
+with the --verbose option.
+
+=back
+
+=head1 DESCRIPTION
+
+This OTRS Package allows for both, initial provisioning and
+continuous updating of the OTRS database from an external
+data source, namly:
+
+    Agent Users
+    Customer Users
+    Customer Companies
+    Groups
+    Queues
+    Roles
+    ... and their relationships
+
+The Column structure of the CSV files is fixed, see section
+L<CSV format> below.
+
+The data are imported using the OTRS Perl API, without direct
+Database access. This makes it independent of the DB schema.
+
+=head1 CSV format
+
+The CSV files must be written in valid CSV, comma separated
+and quoted with double quotes where necessary.
+Newline characters within value are not allowed, not even quoted.
+The first line of the file must be the header line,
+listing the exact column names as specified below.
+
+=over 4
+
+=item B<groups>
+
+    Column name  Format   Content
+    -----------  -------  --------------------
+    name         string   unique and not empty
+    comments     string   any
+    validity     boolean  "valid" or "invalid"
+
+=item B<roles>
+
+    Column name  Format   Content
+    -----------  ------   ---------------
+    name         string   unique and not empty
+    comments     string   any
+    validity     boolean  "valid" or "invalid"
+
+=item B<group_role>
+
+    Column name     Format   Content
+    --------------- -------  ------------------------------
+    role            string   role name, must already exist
+    groupname       string   group name, must already exist
+    permissionkey   key      "rw" or "ro"
+    permissionvalue boolean  1 or 0
+
+=item B<queue>
+
+    Column name  Format   Content
+    -----------  -------  ---------------
+    name         string   queue name, unique and not empty
+    group        string   group name (first word significant)
+    comments     string   any
+    validity     boolean  "valid" or "invalid"
+
+=item B<users>
+
+    Column name  Format   Content
+    -----------  -------  --------------------
+    login        string   unique and not empty
+    email        email    valid e-mail address
+    firstname    string   not empty
+    lastname     string   not empty
+    validity     boolean  "valid" or "invalid"
+
+=item B<role_user>
+
+    Column name  Format   Content
+    -----------  -------  ---------------
+    user         string   login name, unique and not empty
+    role         string   role name, must already exist
+    validity     boolean  "valid" or "invalid"
+
+=item B<customer_company>
+
+    Column name  Format   Content
+    -----------  ------   ---------------
+    customer_id  string   unique and not empty
+    name         string   not empty
+    street       string   any
+    zip          string   any
+    city         string   any
+    country      string   country name from list
+    validity     boolean  "valid" or "invalid"
+
+=item B<customer_group>
+
+    Column name  Format   Content
+    -----------  ------   ---------------
+    customer_id  string   must already exist
+    group        string   must already exit (first word significant)
+    validity     boolean  "valid" or "invalid"
+
+=item B<customer_user>
+
+    Column name  Format   Content
+    -----------  ------   ---------------
+    login        string   unique and not empty
+    email        email    valid e-mail address
+    customer_id  string   must already exist
+    firstname    string   not empty
+    lastname     string   not empty
+    phone        string   any
+    mobile       string   any
+    street       string   any
+    zip          string   any
+    city         string   any
+    country      string   country name from list
+    validity     boolean  "valid" or "invalid"
+
+=item B<customer_user_customer>
+
+    Column name  Format   Content
+    -----------  ------   ---------------
+    login        string   must already exist
+    customer_id  string   must already exist
+
+=back
+
+=head1 BUILD OPM PACKAGE
+
+Build the OPM package from source:
+
+    /opt/otrs/bin/otrs.Console.pl Dev::Package::Build --module-directory . *.sopm .
+
+=head1 EXAMPLES
+
+In the ./bin directory, there is an example script using the OTRS console
+ImportCVS modules e.g. for a cron job:
+
+    */15 * * * *    $HOME/bin/import_all_csv.sh
+
+Note that order is important: import
+Group must be before GroupRole,
+User before Role,
+CustomerCompany before CustomerUser,
+and so on.
+
+=head1 LICENSE
+
+This package is free software; you can redistribute it and/or modify it
+under the terms of the "GNU General Public License".
+
+Please refer to the file "LICENSE" for details.
+
+=head1 BUG REPORTS
+
+    othmar.wigger@terreactive.ch
+
+=head1 SEE ALSO
+
+    https://www.terreactive.ch
+    https://github.com/OTRS/otrs
+    https://www.znuny.org
+
+=cut
