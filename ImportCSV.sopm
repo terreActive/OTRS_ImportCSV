@@ -2,10 +2,14 @@
 <otrs_package version="1.0">
     <Name>ImportCSV</Name>
     <Version>6.2.2</Version>
+    <Framework>6.0.x</Framework>
+    <Framework>6.1.x</Framework>
     <Framework>6.2.x</Framework>
+    <Framework>6.3.x</Framework>
     <Vendor>terreActive AG</Vendor>
     <URL>http://www.terreactive.ch/</URL>
     <License>GNU AFFERO GENERAL PUBLIC LICENSE Version 3, November 2007</License>
+    <ChangeLog Version="6.2.2">Require Perl Module List::Compare</ChangeLog>
     <Description Lang="en">Import CSV files from the otrs.Console</Description>
     <Description Lang="de">Importiren von CSV-Files mittels otrs.Console</Description>
     <BuildDate>?</BuildDate>
