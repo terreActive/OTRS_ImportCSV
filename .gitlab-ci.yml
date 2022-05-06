@@ -1,0 +1,30 @@
+image: 'gitlab.terreactive.ch:5555/taclom/docker-images/taclom:bionic'
+
+variables:
+  no_proxy:     '127.0.0.1,localhost,gitlab.terreactive.ch,docker,gitlab,dis.terreactive.ch,dis,registry.terreactive.ch'
+  http_proxy:   'http://wsa0.terreactive.ch:3125'
+  https_proxy:  'http://wsa0.terreactive.ch:3125'
+
+Build Package:
+  script:
+  # make sure we can install from ubuntu
+  - pab3swsrc latest_open-dev-dis
+  - apt-get update
+  - apt-get install -y git libapache2-mod-perl2 libdbd-mysql-perl libtimedate-perl libnet-dns-perl libnet-ldap-perl libio-socket-ssl-perl libpdf-api2-perl libdbd-mysql-perl libsoap-lite-perl libtext-csv-xs-perl libjson-xs-perl libapache-dbi-perl libxml-libxml-perl libxml-libxslt-perl libyaml-perl libarchive-zip-perl libcrypt-eksblowfish-perl libencode-hanextra-perl libmail-imapclient-perl libtemplate-perl libpackage-stash-perl libdatetime-perl libmoo-perl
+
+  # terreActive hypahypa secure
+  # (┛◉Д◉)┛彡┻━┻
+  - wget --no-verbose -O /usr/local/share/ca-certificates/ca-ta.crt http://dis.terreactive.ch/files/ca-ta.pem
+  - update-ca-certificates
+
+  # Install otrs stuff
+  - git clone https://github.com/znuny/Znuny.git
+  - mv Znuny /opt/otrs
+  - useradd -d /opt/otrs -c 'OTRS user' otrs
+  - cp /opt/otrs/Kernel/Config.pm.dist /opt/otrs/Kernel/Config.pm
+  - chown -R otrs /opt/otrs
+  - su otrs -c "/opt/otrs/bin/otrs.Console.pl Dev::Package::Build --module-directory . *.sopm ."
+  artifacts:
+    paths:
+      - '*-*.opm'
+    expire_in: 1 week
