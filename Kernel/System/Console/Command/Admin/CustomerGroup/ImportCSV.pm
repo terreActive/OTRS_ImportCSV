@@ -22,7 +22,7 @@ our @ObjectDependencies = (
 );
 our $CustomerGroupObject = $Kernel::OM->Get('Kernel::System::CustomerGroup');
 our %CustomerCompanyList = $Kernel::OM->Get('Kernel::System::CustomerCompany')
-    ->CustomerCompanyList(Limit => 0);
+    ->CustomerCompanyList(Limit => 0, UserID => 1);
 our $GroupObject = $Kernel::OM->Get('Kernel::System::Group');
 our %GroupFullnames;
 our %GroupShortnames;

@@ -105,6 +105,7 @@ sub _StoreData {
         UserLogin => '*',
         Valid  => 0,
         Limit => 999999,
+        UserID => 1,
     );
     for my $Login (keys %CustomerUsers) {
         my $shouldCustomerIDs = $Self->{Data}->{$Login};
