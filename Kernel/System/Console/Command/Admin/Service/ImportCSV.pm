@@ -20,7 +20,8 @@ our @ObjectDependencies = (
     'Kernel::System::Service',
 );
 our $ServiceObject = $Kernel::OM->Get('Kernel::System::Service');
-our %ValidStrings = reverse $Kernel::OM->Get('Kernel::System::Valid')->ValidList();
+our %ValidStrings =
+    reverse $Kernel::OM->Get('Kernel::System::Valid')->ValidList();
 
 our $CountUnchanged = 0;
 our $CountAdd = 0;
@@ -179,19 +180,18 @@ sub _ServiceUpdate {
     my ( $Self, %Param ) = @_;
 
     unless ($Self->{DryRun}) {
-        my ($Parent, $Subservice) = split(/::/, $Param{Name});
-        my ($ParentID, $NameShort);
-
-        if ($Subservice) {
+        my @s = split(/::/, $Param{Name});
+        my $NameShort = pop @s;
+        my $Parent = join("::", @s);
+        my $ParentID;
+        if ($Parent) {
             $ParentID = $ServiceObject->ServiceLookup(Name => $Parent);
             unless ($ParentID) {
                 $Self->PrintError("Parent Service does not exist: $Parent");
-                return 0; 
+                return 0;
             }
-            $NameShort = $Subservice;
         } else {
             $ParentID = 0;
-            $NameShort = $Parent;
         }
         $ServiceObject->ServiceUpdate(
             ServiceID => $Param{ServiceID},
@@ -208,19 +208,18 @@ sub _ServiceAdd {
     my ( $Self, %Param ) = @_;
 
     unless ($Self->{DryRun}) {
-        my ($Parent, $Subservice) = split(/::/, $Param{Name});
-        my ($ParentID, $NameShort);
-
-        if ($Subservice) {
+        my @s = split(/::/, $Param{Name});
+        my $NameShort = pop @s;
+        my $Parent = join("::", @s);
+        my $ParentID;
+        if ($Parent) {
             $ParentID = $ServiceObject->ServiceLookup(Name => $Parent);
             unless ($ParentID) {
                 $Self->PrintError("Parent Service does not exist: $Parent");
-                return 0; 
+                return 0;
             }
-            $NameShort = $Subservice;
         } else {
             $ParentID = 0;
-            $NameShort = $Parent;
         }
         $ServiceObject->ServiceAdd(
             Name      => $NameShort,
@@ -246,7 +245,8 @@ sub _PrintStatistics {
         }
     }
     if ($Param{InputErrors}) {
-        $Self->Print($Param{InputErrors} . " faulty input lines in file " . $Self->{SourcePath});
+        $Self->Print($Param{InputErrors} . " faulty input lines in file " .
+            $Self->{SourcePath});
     }
 }
 
