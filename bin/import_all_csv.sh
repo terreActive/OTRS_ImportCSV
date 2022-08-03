@@ -5,15 +5,22 @@
 #
 CMD=/opt/otrs/bin/otrs.Console.pl
 OPTIONS=""  # "--verbose --dry-run"
-SOURCE="--source-path /opt/otrs/var/import"
+SOURCE="--source-path /opt/Uploads"
 
-$CMD Admin::Group::ImportCSV $OPTIONS $SOURCE/groups.csv
-$CMD Admin::Role::ImportCSV $OPTIONS $SOURCE/roles.csv
-$CMD Admin::GroupRole::ImportCSV $OPTIONS $SOURCE/group_role.csv
-$CMD Admin::Queue::ImportCSV $OPTIONS $SOURCE/queue.csv
-$CMD Admin::User::ImportCSV $OPTIONS $SOURCE/users.csv
-$CMD Admin::RoleUser::ImportCSV $OPTIONS $SOURCE/role_user.csv
-$CMD Admin::CustomerCompany::ImportCSV $OPTIONS $SOURCE/customer_company.csv
-$CMD Admin::CustomerGroup::ImportCSV $OPTIONS $SOURCE/customer_group.csv
-$CMD Admin::CustomerUser::ImportCSV $OPTIONS $SOURCE/customer_user.csv
-$CMD Admin::CustomerUserCustomer::ImportCSV $OPTIONS $SOURCE/customer_user_customer.csv
+do_import() {
+    echo $CMD $1 $OPTIONS $SOURCE/$2
+    $CMD $1 $OPTIONS $SOURCE/$2
+}
+
+do_import Admin::Group::ImportCSV groups.csv
+do_import Admin::Role::ImportCSV roles.csv
+do_import Admin::GroupRole::ImportCSV group_role.csv
+do_import Admin::Queue::ImportCSV queue.csv
+do_import Admin::User::ImportCSV users.csv
+do_import Admin::RoleUser::ImportCSV role_user.csv
+do_import Admin::CustomerCompany::ImportCSV customer_company.csv
+do_import Admin::CustomerGroup::ImportCSV customer_group.csv
+do_import Admin::CustomerUser::ImportCSV customer_user.csv
+do_import Admin::CustomerUserCustomer::ImportCSV customer_user_customer.csv
+do_import Admin::Service::ImportCSV customer_user_customer.csv
+do_import Admin::ServiceCustomerUser::ImportCSV customer_user_customer.csv
