@@ -28,6 +28,8 @@
         <File Permission="660" Location="Kernel/System/Console/Command/Admin/Role/ImportCSV.pm" />
         <File Permission="660" Location="Kernel/System/Console/Command/Admin/RoleUser/ImportCSV.pm" />
         <File Permission="660" Location="Kernel/System/Console/Command/Admin/User/ImportCSV.pm" />
+        <File Permission="660" Location="Kernel/System/Console/Command/Admin/Service/ImportCSV.pm" />
+        <File Permission="660" Location="Kernel/System/Console/Command/Admin/ServiceCustomerUser/ImportCSV.pm" />
     </Filelist>
     <ModuleRequired>List::Compare</ModuleRequired>
 </otrs_package>
