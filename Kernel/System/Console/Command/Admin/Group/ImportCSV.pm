@@ -20,7 +20,10 @@ our @ObjectDependencies = (
     'Kernel::System::Group',
 );
 our $GroupObject = $Kernel::OM->Get('Kernel::System::Group');
-our %ValidStrings = reverse $Kernel::OM->Get('Kernel::System::Valid')->ValidList();
+our %GroupFullnames;
+our %GroupShortnames;
+our %ValidStrings =
+    reverse $Kernel::OM->Get('Kernel::System::Valid')->ValidList();
 
 our $CountUnchanged = 0;
 our $CountAdd = 0;
@@ -69,7 +72,7 @@ sub PreRun {
     }
 
     # check header line
-    my $headers = join(",", "name", "comments", "validity");
+    my $headers = join(",", "group", "name", "comments", "validity");
     open my $file, '<:encoding(UTF-8)', $Self->{SourcePath};
     my $firstLine = <$file>;
     close $file;
@@ -104,9 +107,11 @@ sub _CheckUnique() {
     my %keys = ();
     my $ok = 1;
     for (@{$Self->{Data}}) {
-        my $key = $_->[0];
+        my $key = $_->[$Param{Column}];
         if ($keys{$key}) {
-            $Self->PrintError("Duplicate: $key");
+            $Self->PrintError(
+                "Duplicate in column $Param{Column} of CSV: $key"
+            );
             $ok = 0;
         }
         $keys{$key} = $_->[0];
@@ -118,7 +123,7 @@ sub _StoreData {
     my ( $Self, %Param ) = @_;
 
     for (@{$Self->{Data}}) {
-        my ($Name, $Comment, $Validity) = @$_;
+        my ($Id, $Name, $Comment, $Validity) = @$_;
 
         my $ValidID = $ValidStrings{$Validity};
         unless ($ValidID) {
@@ -127,7 +132,7 @@ sub _StoreData {
             next;
         }
 
-        my $GroupID = $GroupObject->GroupLookup(Group => $Name);
+        my $GroupID = $GroupShortnames{$Id};
 
         if ($GroupID) {
             my %GroupData = $GroupObject->GroupGet(
@@ -142,7 +147,7 @@ sub _StoreData {
             } else {
                 $CountUpdate++;
                 if ($Self->{Verbose}) {
-                    $Self->Print("  updating group $Name");
+                    $Self->Print("  updating group $GroupData{Name} to $Name");
                 }
                 unless ($Self->{DryRun}) {
                     $GroupObject->GroupUpdate(
@@ -172,6 +177,24 @@ sub _StoreData {
     }
 }
 
+# The first word of name serves as primary key
+sub _InitializeGroupLists {
+    my ( $Self, %Param ) = @_;
+
+    my $ok = 1;
+    my %Groups = $GroupObject->GroupList();
+    for my $GroupID (keys %Groups) {
+        $GroupFullnames{$Groups{$GroupID}} = $GroupID;
+        my ($short, undef) = split(/ /, $Groups{$GroupID}, 2);
+        if ($GroupShortnames{$short}) {
+            $Self->PrintError("Duplicate Group ID in OTRS DB: $short");
+            $ok = 0;
+        }
+        $GroupShortnames{$short} = $GroupID;
+    }
+    return $ok;
+}
+
 sub _PrintStatistics {
     my ( $Self, %Param ) = @_;
 
@@ -186,15 +209,17 @@ sub _PrintStatistics {
         }
     }
     if ($Param{InputErrors}) {
-        $Self->Print($Param{InputErrors} . " faulty input lines in file " . $Self->{SourcePath});
+        $Self->Print($Param{InputErrors} . " faulty input lines in file " .
+            $Self->{SourcePath});
     }
 }
 
 sub Run {
     my ( $Self, %Param ) = @_;
 
+    $Self->_InitializeGroupLists() or return $Self->ExitCodeError();
     $Self->{Data} = $Self->_SlurpCSV();
-    $Self->_CheckUnique() or return $Self->ExitCodeError();
+    $Self->_CheckUnique( Column => 0 ) or return $Self->ExitCodeError();
     $Self->_StoreData();
     $Self->_PrintStatistics(
         ItemName    => "groups",
