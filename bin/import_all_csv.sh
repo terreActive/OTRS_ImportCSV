@@ -31,15 +31,18 @@ do_import() {
 
 do_import Admin::Group::ImportCSV groups.csv
 do_import Admin::Role::ImportCSV roles.csv
+$CMD Maint::Cache::Delete
 do_import Admin::GroupRole::ImportCSV group_role.csv
 do_import Admin::Queue::ImportCSV queue.csv
 do_import Admin::User::ImportCSV users.csv
+$CMD Maint::Cache::Delete
 do_import Admin::RoleUser::ImportCSV role_user.csv
 do_import Admin::CustomerCompany::ImportCSV customer_company.csv
 do_import Admin::CustomerGroup::ImportCSV customer_group.csv
 do_import Admin::CustomerUser::ImportCSV customer_user.csv
 do_import Admin::CustomerUserCustomer::ImportCSV customer_user_customer.csv
 do_import Admin::Service::ImportCSV service.csv
+$CMD Maint::Cache::Delete
 do_import Admin::ServiceCustomerUser::ImportCSV service_customer_user.csv
 #
 # EOF
