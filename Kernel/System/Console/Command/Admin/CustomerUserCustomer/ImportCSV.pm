@@ -103,7 +103,7 @@ sub _StoreData {
 
     my %CustomerUsers = $CustomerUserObject->CustomerSearch(
         UserLogin => '*',
-        Valid  => 0,
+        Valid  => 1,
         Limit => 999999,
         UserID => 1,
     );
@@ -111,7 +111,7 @@ sub _StoreData {
         my $shouldCustomerIDs = $Self->{Data}->{$Login};
         unless ($shouldCustomerIDs) {
             $CountError++;
-            $Self->PrintError("Customer User $Login company is missing.");
+            $Self->PrintError("$Login is not assigned to any company.");
             next;
         }
         my @hasCustomerIDs = $CustomerUserObject->CustomerIDs(User => $Login);
