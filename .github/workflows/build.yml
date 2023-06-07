@@ -1,0 +1,24 @@
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '30 2 * * 1'
+
+jobs:
+  build-opm:
+    container:
+      image: freicon/opmbuild
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Git Repository
+      uses: actions/checkout@v3
+    - name: Check SOPM
+      run: /usr/local/bin/opmbuild sopmtest $GITHUB_WORKSPACE/ImportCSV.sopm
+    - name: build OPM
+      run: /usr/local/bin/opmbuild build $GITHUB_WORKSPACE/ImportCSV.sopm
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ImportCSV
+        path: ${{ github.workspace }}/*.opm
+        retention-days: 10

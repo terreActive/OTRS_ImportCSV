@@ -1,18 +1,16 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <otrs_package version="1.0">
     <Name>ImportCSV</Name>
-    <Version>6.4.3</Version>
-    <Framework>6.0.x</Framework>
-    <Framework>6.1.x</Framework>
-    <Framework>6.2.x</Framework>
-    <Framework>6.3.x</Framework>
-    <Framework>6.4.x</Framework>
+    <Version>7.0.0</Version>
+    <Framework>6.x.x</Framework>
+    <Framework>7.x.x</Framework>
     <Vendor>terreActive AG</Vendor>
     <URL>http://www.terreactive.ch/</URL>
     <License>GNU AFFERO GENERAL PUBLIC LICENSE Version 3, November 2007</License>
-    <ChangeLog Version="6.2.2">Require Perl Module List::Compare</ChangeLog>
+    <ChangeLog Version="6.2.2">2022-01-24/owi Require Perl Module List::Compare</ChangeLog>
+    <ChangeLog Version="7.0.0">2023-06-07/owi Adapted for Znuny-7.0.x</ChangeLog>
     <Description Lang="en">Import CSV files from the otrs.Console</Description>
-    <Description Lang="de">Importiren von CSV-Files mittels otrs.Console</Description>
+    <Description Lang="de">Importieren von CSV-Files mittels otrs.Console</Description>
     <BuildDate>?</BuildDate>
     <BuildHost>?</BuildHost>
     <Filelist>
